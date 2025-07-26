@@ -378,7 +378,7 @@ def train(
         org_attn: bool = False,
 ):
     # set NCCL_DEBUG
-
+    os.makedirs(output_dir, exist_ok=True) # 确保输出目录存在
     global NIL_DATASET
     NIL_DATASET = True
 
