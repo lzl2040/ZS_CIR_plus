@@ -1,12 +1,13 @@
-RUN=/mnt/input_zuo/ZS-CIR/plus_version/saves/phi3-4bit-cot # 实验名称
+# RUN=/mnt/input_zuo/ZS-CIR/plus_version/saves/phi3-4bit-cot # 实验名称
+RUN=phi3-4bit-ke # 实验名称
 args=()
 
 BASE_MODEL="microsoft/Phi-3-vision-128k-instruct"
 #BASE_MODEL="Qwen/Qwen2.5-VL-7B-Instruct"
 
 #TEMPLATE='*sent_0*\nSummary_above_sentence_in_one_word:'
-TEMPLATE='After_thinking_step_by_step_this_sentence_*sent_0*\nSummary_above_sentence_in_one_word:'
-# TEMPLATE="The_essence_of_a_sentence_is_often_captured_by_its_main_subjects_and_actions_while_descriptive_terms_provide_additional_but_less_central_details_With_this_in_mind_this_sentence_*sent_0*\nSummary_above_sentence_in_one_word:"
+# TEMPLATE='After_thinking_step_by_step_this_sentence_*sent_0*\nSummary_above_sentence_in_one_word:'
+TEMPLATE="The_essence_of_a_sentence_is_often_captured_by_its_main_subjects_and_actions_while_descriptive_terms_provide_additional_but_less_central_details_With_this_in_mind_this_sentence_*sent_0*\nSummary_above_sentence_in_one_word:"
 
 BIT=4
 
