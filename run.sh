@@ -1,5 +1,5 @@
-# RUN=/mnt/input_zuo/ZS-CIR/plus_version/saves/phi3-4bit-cot # 实验名称
-RUN=phi3-4bit-ke # 实验名称
+RUN=/mnt/input_zuo/ZS-CIR/plus_version/saves/phi3-4bit-ke # 实验名称
+# RUN=phi3-4bit-ke # 实验名称
 args=()
 
 BASE_MODEL="microsoft/Phi-3-vision-128k-instruct"
