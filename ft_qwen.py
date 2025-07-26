@@ -419,7 +419,7 @@ def train(
         org_attn: bool = False,
 ):
     # set NCCL_DEBUG
-
+    os.makedirs(output_dir, exist_ok=True)
     global NIL_DATASET
     NIL_DATASET = True
 

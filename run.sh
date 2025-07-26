@@ -1,13 +1,14 @@
-RUN=/mnt/input_zuo/ZS-CIR/plus_version/saves/phi3-4bit-org # 实验名称
+RUN=/mnt/input_zuo/ZS-CIR/plus_version/saves/qwen-4bit-ke # 实验名称
 # RUN=phi3-4bit-cot # 实验名称
+# RUN=qwen-4bit-ke
 args=()
 
-BASE_MODEL="microsoft/Phi-3-vision-128k-instruct"
-#BASE_MODEL="Qwen/Qwen2.5-VL-7B-Instruct"
+# BASE_MODEL="microsoft/Phi-3-vision-128k-instruct"
+BASE_MODEL="Qwen/Qwen2.5-VL-7B-Instruct"
 
-TEMPLATE='*sent_0*\nSummary_above_sentence_in_one_word:'
+# TEMPLATE='*sent_0*\nSummary_above_sentence_in_one_word:'
 # TEMPLATE='After_thinking_step_by_step_this_sentence_*sent_0*\nSummary_above_sentence_in_one_word:'
-# TEMPLATE="The_essence_of_a_sentence_is_often_captured_by_its_main_subjects_and_actions_while_descriptive_terms_provide_additional_but_less_central_details_With_this_in_mind_this_sentence_*sent_0*\nSummary_above_sentence_in_one_word:"
+TEMPLATE="The_essence_of_a_sentence_is_often_captured_by_its_main_subjects_and_actions_while_descriptive_terms_provide_additional_but_less_central_details_With_this_in_mind_this_sentence_*sent_0*\nSummary_above_sentence_in_one_word:"
 
 BIT=4
 
@@ -16,7 +17,7 @@ ALPHA=16
 BATCH_SIZE=768
 MICRO_BATCH_SIZE=384 # 尽量调大，直到显存占满, 96 for phi3
 EPOCH=2
-LR=2e-4 # 4e-4 for llava, 2e-4 for phi3, 4e-4 for qwen
+LR=4e-4 # 4e-4 for llava, 2e-4 for phi3, 4e-4 for qwen
 
 echo $BASE_MODEL
 echo $TEMPLATE
@@ -30,7 +31,7 @@ NUM_NODES=1 # 4
 wandb online
 
 
-NCCL_DEBUG=ERROR deepspeed --num_gpus=$GPUS --num_nodes=$NUM_NODES ft_llm.py \
+NCCL_DEBUG=ERROR deepspeed --num_gpus=$GPUS --num_nodes=$NUM_NODES ft_qwen.py \
         --base_model   $BASE_MODEL \
         --data_path 'data/nli_for_simcse.csv' \
         --batch_size $BATCH_SIZE \
