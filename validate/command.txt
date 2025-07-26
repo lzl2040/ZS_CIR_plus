@@ -1,0 +1,32 @@
+### validation command
+CUDA_VISIBLE_DEVICES=2 python src/sft_validate.py \
+   --phi3 True \
+   --name 'Phi-3-vision-128k-instruct' \
+   --base_model 'phi3_vision' \
+   --prompt_type 'ke' \
+   --lora_path '/data/tangwenyue/Code/ZS-CIR/ZS-CIR-twy/phi3-4bit-ke/checkpoint-400' \
+   --file_path '/data/tangwenyue/Code/ZS-CIR/CIR-twy/results'
+
+CUDA_VISIBLE_DEVICES=3 python src/sft_validate.py \
+   --phi3 True \
+   --name 'Phi-3-vision-128k-instruct' \
+   --base_model 'phi3_vision' \
+   --prompt_type 'org' \
+   --file_path '/data/tangwenyue/Code/ZS-CIR/CIR-twy/results' \
+   --shared_concept
+
+
+CUDA_VISIBLE_DEVICES=3 python src/sft_qwen_embed.py \
+   --name 'qwen2_5_vl' \
+   --base_model 'qwen2_5_vl' \
+   --prompt_type 'original' \
+   --lora_path '/data/tangwenyue/Code/ZS-CIR/ZS-CIR-twy/qwen_4bit_cot_lora/checkpoint-200' \
+   --file_path '/data/tangwenyue/Code/ZS-CIR/CIR-twy/results' \
+   --shared_concept True
+
+CUDA_VISIBLE_DEVICES=1 python src/sft_qwen_embed.py \
+   --name 'qwen2_5_vl' \
+   --base_model 'qwen2_5_vl' \
+   --prompt_type 'cot' \
+   --file_path '/data/tangwenyue/Code/ZS-CIR/CIR-twy/results' \
+   --shared_concept True
