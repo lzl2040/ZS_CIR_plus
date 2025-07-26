@@ -43,7 +43,7 @@ NCCL_DEBUG=ERROR deepspeed --num_gpus=$GPUS --num_nodes=$NUM_NODES ft_qwen.py \
         --lora_alpha $ALPHA \
         --lora_dropout 0.05 \
         --output_dir $RUN  --is_sentemb \
-        --mask_embedding_sentence_template $TEMPLATE --use_neg_sentence --save_steps 50 \
+        --mask_embedding_sentence_template $TEMPLATE --use_neg_sentence --save_steps 10 \
         --deepspeed ds.config \
         --lora_target_modules q_proj,k_proj,v_proj,o_proj,gate_proj,down_proj,up_proj  --logging_steps 1 --grad_checkpoint \
          --load_kbit $BIT \
