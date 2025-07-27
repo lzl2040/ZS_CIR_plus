@@ -12,7 +12,7 @@ import cv2
 import json
 import shutil
 from statistics import mean, geometric_mean, harmonic_mean
-
+import os
 import numpy as np
 import torch.nn.functional as F
 from torch import nn
@@ -28,6 +28,9 @@ from sft_datasets import collate_fn, FashionIQDataset, CIRRDataset, CIRCODataset
 
 from accelerate import Accelerator
 accelerator = Accelerator()
+
+feature_path = "/mnt/input_zuo/ZS-CIR/plus_version/saves/phi3_index_features"
+os.makedirs(feature_path, exist_ok=True)
 
 import os
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
@@ -122,6 +125,7 @@ def init_model_and_transform(base_model, lora_path, bf16):
 
 # 将不同数据集 data 的评估指标 metrics 输出到文件中
 def log_to_file(data, metrics, checkpoint_name, file_path, fiq_data_type=None):
+    os.makedirs(file_path, exist_ok=True)
     if data == 'fashioniq':
         assert len(metrics) == 2
         r_at_10, r_at_50 = metrics
@@ -516,6 +520,13 @@ def main(
 ):
     global DEBUG, MODEL_TYPE
     DEBUG = debug
+    if lora_path != None:
+        ckt_id = lora_path.split("/")[-1].split("-")[1]
+        train_prompt_type = lora_path.split("/")[-2].split("-")[-1]
+    else:
+        ckt_id = -1
+        train_prompt_type = "none"
+    print(f"Use checkpoint {ckt_id} to eval, use train prompt type {train_prompt_type}")
 
     if phi3:
         MODEL_TYPE = 'phi3_vision'
@@ -552,7 +563,8 @@ def main(
         return img_prompt, text_img_prompt
 
     # datasets = ['circo']
-    datasets = ['fashioniq dress', 'fashioniq shirt', 'fashioniq toptee', 'cirr']
+    # datasets = ['fashioniq dress', 'fashioniq shirt', 'fashioniq toptee', 'cirr']
+    datasets = ['fashioniq dress', 'fashioniq shirt', 'fashioniq toptee']
     # datasets = ['cirr']
     if data:
         datasets = data.split(',')
@@ -606,7 +618,7 @@ def main(
             relative_val_dataset = FashionIQDataset('val', [fiq_data_type], 'relative')
             classic_val_dataset = FashionIQDataset('val', [fiq_data_type], 'classic')
 
-            feature_path = f'/data/tangwenyue/Code/ZS-CIR/CIR-twy/phi3_index_features/{prompt_type}_fiq_{fiq_data_type}_index_data_400_{prompt_type}.pt'
+            feature_path = f'{feature_path}/train_{train_prompt_type}_fiq_{fiq_data_type}_index_data_{ckt_id}_eval_{prompt_type}.pt'
             metrics = fiq_compute_val_metrics(model, transform, device, relative_val_dataset, classic_val_dataset, batch_size, img_prompt, text_img_prompt, phi3, feature_path, shared_concept)
             print(metrics)
 
@@ -643,7 +655,7 @@ def main(
                     text_img_prompt = "[INST] <image>\n The essence of this image is often captured by its main objects and actions, while additional details provide context. " \
                                       "With this in mind, modify this image with \"<sent>\", and describe the modified image in one word: [/INST]"
 
-            feature_path = f"/data/tangwenyue/Code/ZS-CIR/CIR-twy/phi3_index_features/{prompt_type}_cirr_index_data_400_{prompt_type}.pt"
+            feature_path = f"{feature_path}/train_{train_prompt_type}_cirr_index_data_{ckt_id}_eval_{prompt_type}.pt"
             img_prompt, text_img_prompt = process_prompt(img_prompt, text_img_prompt)
 
             relative_val_dataset = CIRRDataset('val', 'relative')
@@ -690,8 +702,8 @@ def main(
             relative_val_dataset = CIRCODataset('val', 'relative')
             classic_val_dataset = CIRCODataset('val', 'classic')
 
-            # feature_path = f'/data/tangwenyue/Code/ZS-CIR/CIR-twy/phi3_index_features/{prompt_type}_circo_index_data_350_{prompt_type}.pt'
-            feature_path = f'/data/tangwenyue/Code/ZS-CIR/CIR-twy/phi3_index_features/circo_index_data_org.pt'
+            feature_path = f'{feature_path}/train_{train_prompt_type}_circo_index_data_{ckt_id}_eval_{prompt_type}.pt'
+            # feature_path = f'{feature_path}/circo_index_data_org.pt'
             metrics = circo_compute_val_metrics(model, transform, device, relative_val_dataset, classic_val_dataset,
                                                batch_size, img_prompt, text_img_prompt, phi3, feature_path, shared_concept)
             print(metrics)

@@ -28,7 +28,7 @@ def collate_fn(batch):
         collate_batch[key] = [b[key] for b in batch]
     return collate_batch
 
-dataset_path = Path('/data/tangwenyue/Dataset/')
+dataset_path = Path('/mnt/input_zuo/ZS-CIR')
 
 # FashionIQ Dataset
 class FashionIQDataset(Dataset):
