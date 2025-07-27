@@ -29,8 +29,8 @@ from sft_datasets import collate_fn, FashionIQDataset, CIRRDataset, CIRCODataset
 from accelerate import Accelerator
 accelerator = Accelerator()
 
-feature_path = "/mnt/input_zuo/ZS-CIR/plus_version/saves/phi3_index_features"
-os.makedirs(feature_path, exist_ok=True)
+feature_root = "/mnt/input_zuo/ZS-CIR/plus_version/saves/phi3_index_features"
+os.makedirs(feature_root, exist_ok=True)
 
 import os
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
@@ -618,7 +618,7 @@ def main(
             relative_val_dataset = FashionIQDataset('val', [fiq_data_type], 'relative')
             classic_val_dataset = FashionIQDataset('val', [fiq_data_type], 'classic')
 
-            feature_path = f'{feature_path}/train_{train_prompt_type}_fiq_{fiq_data_type}_index_data_{ckt_id}_eval_{prompt_type}.pt'
+            feature_path = f'{feature_root}/train_{train_prompt_type}_fiq_{fiq_data_type}_index_data_{ckt_id}_eval_{prompt_type}.pt'
             metrics = fiq_compute_val_metrics(model, transform, device, relative_val_dataset, classic_val_dataset, batch_size, img_prompt, text_img_prompt, phi3, feature_path, shared_concept)
             print(metrics)
 
@@ -655,7 +655,7 @@ def main(
                     text_img_prompt = "[INST] <image>\n The essence of this image is often captured by its main objects and actions, while additional details provide context. " \
                                       "With this in mind, modify this image with \"<sent>\", and describe the modified image in one word: [/INST]"
 
-            feature_path = f"{feature_path}/train_{train_prompt_type}_cirr_index_data_{ckt_id}_eval_{prompt_type}.pt"
+            feature_path = f"{feature_root}/train_{train_prompt_type}_cirr_index_data_{ckt_id}_eval_{prompt_type}.pt"
             img_prompt, text_img_prompt = process_prompt(img_prompt, text_img_prompt)
 
             relative_val_dataset = CIRRDataset('val', 'relative')
@@ -702,7 +702,7 @@ def main(
             relative_val_dataset = CIRCODataset('val', 'relative')
             classic_val_dataset = CIRCODataset('val', 'classic')
 
-            feature_path = f'{feature_path}/train_{train_prompt_type}_circo_index_data_{ckt_id}_eval_{prompt_type}.pt'
+            feature_path = f'{feature_root}/train_{train_prompt_type}_circo_index_data_{ckt_id}_eval_{prompt_type}.pt'
             # feature_path = f'{feature_path}/circo_index_data_org.pt'
             metrics = circo_compute_val_metrics(model, transform, device, relative_val_dataset, classic_val_dataset,
                                                batch_size, img_prompt, text_img_prompt, phi3, feature_path, shared_concept)
@@ -710,7 +710,10 @@ def main(
 
         if accelerator.is_main_process:
             if lora_path is not None:
-                checkpoint_name = lora_path.replace('/', '_') + '.txt'
+                train_model_name = lora_path.split("/")[-2]
+                ckt_name = lora_path.split("/")[-1]
+                # checkpoint_name = lora_path.replace('/', '_') + '.txt'
+                checkpoint_name = f"{train_model_name}_{ckt_name}_eval_{prompt_type}.txt"
             elif name is not None:
                 checkpoint_name = name if name.endswith('.txt') else name + '.txt'
             else:

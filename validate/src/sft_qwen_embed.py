@@ -8,6 +8,7 @@ from typing import List, Tuple
 import torch
 from tqdm import tqdm
 
+import os
 import cv2
 import json
 import copy
@@ -33,7 +34,10 @@ from sft_datasets import collate_fn, FashionIQDataset, CIRRDataset, CIRCODataset
 from accelerate import Accelerator
 accelerator = Accelerator()
 
-import os
+# feature_root = "qwen_index_features_2"
+feature_root = "/mnt/input_zuo/ZS-CIR/plus_version/saves/qwen_index_features"
+os.makedirs(feature_root, exist_ok=True)
+
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 # import swanlab
@@ -119,6 +123,7 @@ def init_model_and_transform(base_model, lora_path, bf16):
 
 # 将不同数据集 data 的评估指标 metrics 输出到文件中
 def log_to_file(data, metrics, checkpoint_name, file_path, fiq_data_type=None):
+    os.makedirs(file_path, exist_ok=True)
     if data == 'fashioniq':
         assert len(metrics) == 2
         r_at_10, r_at_50 = metrics
@@ -146,15 +151,19 @@ def log_to_file(data, metrics, checkpoint_name, file_path, fiq_data_type=None):
 # 计算检索召回率
 @torch.no_grad()
 def generate_fiq_val_predictions(model, transform, device, relative_val_dataset, classic_val_dataset,
-                                 batch_size, img_prompt, text_img_prompt, fiq_data_type):
+                                 batch_size, img_prompt, text_img_prompt, feature_path, shared_concept):
     print('img_prompt = ', img_prompt)
     print('text_img_prompt = ', text_img_prompt)
 
     bsz = batch_size
 
-    index_features, index_names = extract_index_features_qwen(classic_val_dataset, model, transform, img_prompt)
-    # index_data = {'features': index_features, 'names': index_names}
-    # torch.save(index_data, f'/data/tangwenyue/Code/ZS-CIR/CIR-twy/index_features/qwen_cot_fiq_{fiq_data_type}_index_data.pt')
+    if os.path.exists(feature_path):
+        index_data = torch.load(feature_path)
+        index_features, index_names = index_data['features'], index_data['names']
+    else:
+        index_features, index_names = extract_index_features_qwen(classic_val_dataset, model, transform, img_prompt)
+        index_data = {'features': index_features, 'names': index_names}
+        torch.save(index_data, feature_path)
 
     relative_val_dataloader = DataLoader(dataset=relative_val_dataset, batch_size=bsz, num_workers=4,
                                          collate_fn=collate_fn, shuffle=False)
@@ -178,7 +187,11 @@ def generate_fiq_val_predictions(model, transform, device, relative_val_dataset,
             # prompt[1]["content"][0]["image"] = img
             # prompt[1]["content"][1]["text"] = prompt[1]["content"][1]["text"].replace('<sent>', text)
             prompt[0]["content"][0]["image"] = img
-            prompt[0]["content"][1]["text"] = prompt[0]["content"][1]["text"].replace('<sent>', text)
+            if shared_concept:
+                prompt[0]["content"][1]["text"] = prompt[0]["content"][1]["text"].replace('<sent>', text).replace(
+                    '<concept>', concept)
+            else:
+                prompt[0]["content"][1]["text"] = prompt[0]["content"][1]["text"].replace('<sent>', text)
             text_img_messages_batch.append(prompt)
 
         input_texts = transform.apply_chat_template(text_img_messages_batch, tokenize=False, add_generation_prompt=True)
@@ -199,12 +212,19 @@ def generate_fiq_val_predictions(model, transform, device, relative_val_dataset,
 
     return predicted_features, target_names_list, index_features, index_names
 
+
 @torch.no_grad()
 def fiq_compute_val_metrics(model, transform, device, relative_val_dataset, classic_val_dataset,
-                            batch_size, img_prompt, text_img_prompt, fiq_data_type):
+                            batch_size, img_prompt, text_img_prompt, feature_path, shared_concept):
     # Generate the predicted_features, target_names_list, index_features, index_names_list
-    predicted_features, target_names, index_features, index_names = generate_fiq_val_predictions(model, transform, device, relative_val_dataset, classic_val_dataset,
-                                                                                                 batch_size, img_prompt, text_img_prompt, fiq_data_type)
+    predicted_features, target_names, index_features, index_names = generate_fiq_val_predictions(model, transform,
+                                                                                                 device,
+                                                                                                 relative_val_dataset,
+                                                                                                 classic_val_dataset,
+                                                                                                 batch_size, img_prompt,
+                                                                                                 text_img_prompt,
+                                                                                                 feature_path,
+                                                                                                 shared_concept)
     # Move the features to the device
     index_features = index_features.to(device)
     predicted_features = predicted_features.to(device)
@@ -229,15 +249,19 @@ def fiq_compute_val_metrics(model, transform, device, relative_val_dataset, clas
 
 @torch.no_grad()
 def generate_cirr_val_predictions(model, transform, device, relative_val_dataset, classic_val_dataset,
-                                  batch_size, img_prompt, text_img_prompt):
+                                  batch_size, img_prompt, text_img_prompt, feature_path, shared_concept):
     print(img_prompt)
     print(text_img_prompt)
 
     bsz = batch_size
 
-    index_features, index_names = extract_index_features_qwen(classic_val_dataset, model, transform, img_prompt)
-    # index_data = {'features': index_features, 'names': index_names}
-    # torch.save(index_data, '/data/tangwenyue/Code/ZS-CIR/CIR-twy/index_features/qwen_cot_cirr_index_data.pt')
+    if os.path.exists(feature_path):
+        index_data = torch.load(feature_path)
+        index_features, index_names = index_data['features'], index_data['names']
+    else:
+        index_features, index_names = extract_index_features_qwen(classic_val_dataset, model, transform, img_prompt)
+        index_data = {'features': index_features, 'names': index_names}
+        torch.save(index_data, feature_path)
 
     relative_val_dataloader = DataLoader(dataset=relative_val_dataset, batch_size=bsz, num_workers=4,
                                          collate_fn=collate_fn, shuffle=False)
@@ -265,7 +289,11 @@ def generate_cirr_val_predictions(model, transform, device, relative_val_dataset
             # prompt[1]["content"][0]["image"] = img
             # prompt[1]["content"][1]["text"] = prompt[1]["content"][1]["text"].replace('<sent>', text)
             prompt[0]["content"][0]["image"] = img
-            prompt[0]["content"][1]["text"] = prompt[0]["content"][1]["text"].replace('<sent>', text)
+            if shared_concept:
+                prompt[0]["content"][1]["text"] = prompt[0]["content"][1]["text"].replace('<sent>', text).replace(
+                    '<concept>', concept)
+            else:
+                prompt[0]["content"][1]["text"] = prompt[0]["content"][1]["text"].replace('<sent>', text)
             text_img_messages_batch.append(prompt)
 
         input_texts = transform.apply_chat_template(text_img_messages_batch, tokenize=False, add_generation_prompt=True)
@@ -291,11 +319,11 @@ def generate_cirr_val_predictions(model, transform, device, relative_val_dataset
 
 @torch.no_grad()
 def cirr_compute_val_metrics(model, transform, device, relative_val_dataset, classic_val_dataset,
-                             batch_size, img_prompt, text_img_prompt):
+                             batch_size, img_prompt, text_img_prompt, feature_path, shared_concept):
     # Generate the predicted_features, target_names_list, index_features, index_names_list
     predicted_features, reference_names, target_names, group_members, index_features, index_names = generate_cirr_val_predictions(
-                                                                                                model, transform, device, relative_val_dataset, classic_val_dataset,
-                                                                                                batch_size, img_prompt, text_img_prompt)
+        model, transform, device, relative_val_dataset, classic_val_dataset,
+        batch_size, img_prompt, text_img_prompt, feature_path, shared_concept)
 
     # Move the features to the device
     index_features = index_features.to(device)
@@ -340,17 +368,19 @@ def cirr_compute_val_metrics(model, transform, device, relative_val_dataset, cla
 
 @torch.no_grad()
 def generate_circo_val_predictions(model, transform, device, relative_val_dataset, classic_val_dataset,
-                                  batch_size, img_prompt, text_img_prompt, shared_concept):
+                                   batch_size, img_prompt, text_img_prompt, feature_path, shared_concept):
     print(img_prompt)
     print(text_img_prompt)
 
     bsz = batch_size
 
-    # index_features, index_names = extract_index_features_qwen(classic_val_dataset, model, transform, img_prompt)
-    # index_data = {'features': index_features, 'names': index_names}
-    # torch.save(index_data, '/data/tangwenyue/Code/ZS-CIR/CIR-twy/qwen_index_features/circo_index_cot.pt')
-    index_data = torch.load('/data/tangwenyue/Code/ZS-CIR/CIR-twy/qwen_index_features/circo_index_cot.pt')
-    index_features, index_names = index_data['features'], index_data['names']
+    if os.path.exists(feature_path):
+        index_data = torch.load(feature_path)
+        index_features, index_names = index_data['features'], index_data['names']
+    else:
+        index_features, index_names = extract_index_features_qwen(classic_val_dataset, model, transform, img_prompt)
+        index_data = {'features': index_features, 'names': index_names}
+        torch.save(index_data, feature_path)
 
     relative_val_dataloader = DataLoader(dataset=relative_val_dataset, batch_size=bsz, num_workers=4,
                                          collate_fn=collate_fn, shuffle=False)
@@ -366,8 +396,8 @@ def generate_circo_val_predictions(model, transform, device, relative_val_datase
         reference_images = batch['reference_image']
         target_names = batch['target_name']
         relative_captions = batch['relative_caption']
-        # shared_concepts = batch['shared_concept']
-        shared_concepts = batch['new_shared_concept']
+        shared_concepts = batch['shared_concept']
+        # shared_concepts = batch['new_shared_concept']
 
         gt_img_ids = batch['gt_img_ids']
         gt_img_ids = np.array(gt_img_ids).tolist()
@@ -380,8 +410,8 @@ def generate_circo_val_predictions(model, transform, device, relative_val_datase
             # # prompt[1]["content"][1]["text"] = prompt[1]["content"][1]["text"].replace('<sent>', text)
             prompt[0]["content"][0]["image"] = img
             if shared_concept:
-                # with shared concept
-                prompt[0]["content"][1]["text"] = prompt[0]["content"][1]["text"].replace('<sent>', text).replace('<concept>', concept)
+                prompt[0]["content"][1]["text"] = prompt[0]["content"][1]["text"].replace('<sent>', text).replace(
+                    '<concept>', concept)
             else:
                 prompt[0]["content"][1]["text"] = prompt[0]["content"][1]["text"].replace('<sent>', text)
             text_img_messages_batch.append(prompt)
@@ -408,11 +438,11 @@ def generate_circo_val_predictions(model, transform, device, relative_val_datase
 
 @torch.no_grad()
 def circo_compute_val_metrics(model, transform, device, relative_val_dataset, classic_val_dataset,
-                             batch_size, img_prompt, text_img_prompt, shared_concept):
+                              batch_size, img_prompt, text_img_prompt, shared_concept):
     # Generate the predicted_features, target_names_list, index_features, index_names_list
     predicted_features, target_names, gts_img_ids, index_features, index_names = generate_circo_val_predictions(
-                                                                                                model, transform, device, relative_val_dataset, classic_val_dataset,
-                                                                                                batch_size, img_prompt, text_img_prompt, shared_concept)
+        model, transform, device, relative_val_dataset, classic_val_dataset,
+        batch_size, img_prompt, text_img_prompt, shared_concept)
     # Move the features to the device
     index_features = index_features.to(device)
     predicted_features = predicted_features.to(device)
@@ -467,7 +497,7 @@ def circo_compute_val_metrics(model, transform, device, relative_val_dataset, cl
 
 
 def main(
-        base_model: str="llava_llama3",
+        base_model: str = "llava_llama3",
         llava_llama3: bool = False,
         lora_path: str = None,
         file_path: str = None,
@@ -478,13 +508,23 @@ def main(
         debug: bool = False,
         llava: bool = False,
         phi3: bool = False,
-        qwen2_5_vl: bool=False,
+        qwen2_5_vl: bool = False,
         name: str = None,
-        prompt_type: str="cot",
-        shared_concept: bool=False,
+        train_prompt: str = "cot",
+        prompt_type: str = "cot",
+        feature_path: str = None,
+        shared_concept: bool = False,
 ):
     global DEBUG, MODEL_TYPE
     DEBUG = debug
+
+    if lora_path != None:
+        ckt_id = lora_path.split("/")[-1].split("-")[1]
+        train_prompt_type = lora_path.split("/")[-2].split("-")[-1]
+    else:
+        ckt_id = -1
+        train_prompt_type = "none"
+    print(f"Use checkpoint {ckt_id} to eval, use train prompt type {train_prompt_type}")
 
     if qwen2_5_vl:
         MODEL_TYPE = 'qwen2_5_vl'
@@ -499,9 +539,9 @@ def main(
     model, transform = init_model_and_transform(base_model, lora_path, bf16)
     model.to(device)
 
-    datasets = ['circo']
+    # datasets = ['circo']
     # datasets = ['fashioniq dress', 'fashioniq shirt', 'fashioniq toptee', 'circo']
-    # datasets = ['fashioniq dress', 'fashioniq shirt', 'fashioniq toptee']
+    datasets = ['fashioniq dress', 'fashioniq shirt', 'fashioniq toptee']
     # datasets = ['cirr']
     if data:
         datasets = data.split(',')
@@ -519,7 +559,7 @@ def main(
             classic_val_dataset = FashionIQDataset('val', [fiq_data_type], 'classic')
 
             # # Original prompt (summarize word)
-            if prompt_type == 'original':
+            if prompt_type == 'org':
                 img_prompt = [
                     # {"role": "system", "content": "You are a helpful assistant."},
                     {
@@ -533,20 +573,36 @@ def main(
                         ],
                     }
                 ]
-
-                text_img_prompt = [
-                    # {"role": "system", "content": "You are a helpful assistant."},
-                    {
-                        "role": "user",
-                        "content": [
-                            {
-                                "type": "image",
-                                "image": "image_path",
-                            },
-                            {"type": "text", "text": f"Change the style of this {fiq_data_name} to \"<sent>\", and Describe this modified {fiq_data_name} in one word based on its style:"},
-                        ],
-                    }
-                ]
+                if shared_concept:
+                    text_img_prompt = [
+                        # {"role": "system", "content": "You are a helpful assistant."},
+                        {
+                            "role": "user",
+                            "content": [
+                                {
+                                    "type": "image",
+                                    "image": "image_path",
+                                },
+                                {"type": "text",
+                                 "text": f"Change the style of this {fiq_data_name} to \"<sent>\", and the shared concept is \"<concept>\", and describe this modified {fiq_data_name} in one word based on its style:"},
+                            ],
+                        }
+                    ]
+                else:
+                    text_img_prompt = [
+                        # {"role": "system", "content": "You are a helpful assistant."},
+                        {
+                            "role": "user",
+                            "content": [
+                                {
+                                    "type": "image",
+                                    "image": "image_path",
+                                },
+                                {"type": "text",
+                                 "text": f"Change the style of this {fiq_data_name} to \"<sent>\", and describe this modified {fiq_data_name} in one word based on its style:"},
+                            ],
+                        }
+                    ]
             elif prompt_type == 'cot':
                 # Pretended CoT prompt (summarize word)
                 img_prompt = [
@@ -558,12 +614,44 @@ def main(
                                 "type": "image",
                                 "image": "image_path",
                             },
-                            {"type": "text", "text": f"After thinking step by step, describe this {fiq_data_name} in one word based on its style: "},
+                            {"type": "text",
+                             "text": f"After thinking step by step, describe this {fiq_data_name} in one word based on its style: "},
                         ],
                     }
                 ]
-
-                text_img_prompt = [
+                if shared_concept:
+                    text_img_prompt = [
+                        # {"role": "system", "content": "You are a helpful assistant."},
+                        {
+                            "role": "user",
+                            "content": [
+                                {
+                                    "type": "image",
+                                    "image": "image_path",
+                                },
+                                {"type": "text",
+                                 "text": f"After thinking step by step, change the style of this {fiq_data_name} to \"<sent>\", and the shared concept is \"<concept>\", and describe this modified {fiq_data_name} in one word based on its style:"},
+                            ],
+                        }
+                    ]
+                else:
+                    text_img_prompt = [
+                        # {"role": "system", "content": "You are a helpful assistant."},
+                        {
+                            "role": "user",
+                            "content": [
+                                {
+                                    "type": "image",
+                                    "image": "image_path",
+                                },
+                                {"type": "text",
+                                 "text": f"After thinking step by step, change the style of this {fiq_data_name} to \"<sent>\", and describe this modified {fiq_data_name} in one word based on its style:"},
+                            ],
+                        }
+                    ]
+            elif prompt_type == 'ke':
+                # Pretended CoT prompt (summarize word)
+                img_prompt = [
                     # {"role": "system", "content": "You are a helpful assistant."},
                     {
                         "role": "user",
@@ -573,17 +661,53 @@ def main(
                                 "image": "image_path",
                             },
                             {"type": "text",
-                             "text": f"After thinking step by step, change the style of this {fiq_data_name} to \"<sent>\", and describe this modified {fiq_data_name} in one word based on its style:"},
+                             "text": "The essence of image is often captured by its main objects and actions, while additional details provide context. " \
+                                     f"With this in mind, describe this {fiq_data_name} in one word based on its style: "},
                         ],
                     }
                 ]
+                if shared_concept:
+                    text_img_prompt = [
+                        # {"role": "system", "content": "You are a helpful assistant."},
+                        {
+                            "role": "user",
+                            "content": [
+                                {
+                                    "type": "image",
+                                    "image": "image_path",
+                                },
+                                {"type": "text",
+                                 "text": "The essence of image is often captured by its main objects and actions, while additional details provide context. " \
+                                         f"With this in mind, change the style of this {fiq_data_name} to \"<sent>\", and the shared concept is \"<concept>\", and describe this modified {fiq_data_name} in one word based on its style:"},
+                            ],
+                        }
+                    ]
+                else:
+                    text_img_prompt = [
+                        # {"role": "system", "content": "You are a helpful assistant."},
+                        {
+                            "role": "user",
+                            "content": [
+                                {
+                                    "type": "image",
+                                    "image": "image_path",
+                                },
+                                {"type": "text",
+                                 "text": "The essence of image is often captured by its main objects and actions, while additional details provide context. " \
+                                         f"With this in mind, change the style of this {fiq_data_name} to \"<sent>\", and describe this modified {fiq_data_name} in one word based on its style:"},
+                            ],
+                        }
+                    ]
 
-            metrics = fiq_compute_val_metrics(model, transform, device, relative_val_dataset, classic_val_dataset, batch_size, img_prompt, text_img_prompt, fiq_data_type)
+            feature_path = f'{feature_root}/train_{train_prompt_type}_fiq_{fiq_data_type}_index_data_{ckt_id}_eval_{prompt_type}.pt'
+            print(feature_path)
+            metrics = fiq_compute_val_metrics(model, transform, device, relative_val_dataset, classic_val_dataset,
+                                              batch_size, img_prompt, text_img_prompt, feature_path, shared_concept)
             print(metrics)
 
         # Validate on CIRR dataset
         elif data == 'cirr':
-            if prompt_type == 'original':
+            if prompt_type == 'org':
                 # Original prompt (summarize word)
                 img_prompt = [
                     # {"role": "system", "content": "You are a helpful assistant."},
@@ -598,21 +722,36 @@ def main(
                         ],
                     }
                 ]
-
-                text_img_prompt = [
-                    # {"role": "system", "content": "You are a helpful assistant."},
-                    {
-                        "role": "user",
-                        "content": [
-                            {
-                                "type": "image",
-                                "image": "image_path",
-                            },
-                            {"type": "text",
-                             "text": "Modify this image with \"<sent>\", describe modified image in one word: "},
-                        ],
-                    }
-                ]
+                if shared_concept:
+                    text_img_prompt = [
+                        # {"role": "system", "content": "You are a helpful assistant."},
+                        {
+                            "role": "user",
+                            "content": [
+                                {
+                                    "type": "image",
+                                    "image": "image_path",
+                                },
+                                {"type": "text",
+                                 "text": "Modify this image with \"<sent>\", describe modified image in one word: "},
+                            ],
+                        }
+                    ]
+                else:
+                    text_img_prompt = [
+                        # {"role": "system", "content": "You are a helpful assistant."},
+                        {
+                            "role": "user",
+                            "content": [
+                                {
+                                    "type": "image",
+                                    "image": "image_path",
+                                },
+                                {"type": "text",
+                                 "text": "Modify this image with \"<sent>\", and the shared concept is \"<concept>\", describe modified image in one word: "},
+                            ],
+                        }
+                    ]
             elif prompt_type == 'cot':
                 # Pretended prompt (summarize word)
                 img_prompt = [
@@ -628,8 +767,39 @@ def main(
                         ],
                     }
                 ]
-
-                text_img_prompt = [
+                if shared_concept:
+                    text_img_prompt = [
+                        # {"role": "system", "content": "You are a helpful assistant."},
+                        {
+                            "role": "user",
+                            "content": [
+                                {
+                                    "type": "image",
+                                    "image": "image_path",
+                                },
+                                {"type": "text",
+                                 "text": "After thinking step by step, modify this image with \"<sent>\", and the shared concept is \"<concept>\", describe modified image in one word: "},
+                            ],
+                        }
+                    ]
+                else:
+                    text_img_prompt = [
+                        # {"role": "system", "content": "You are a helpful assistant."},
+                        {
+                            "role": "user",
+                            "content": [
+                                {
+                                    "type": "image",
+                                    "image": "image_path",
+                                },
+                                {"type": "text",
+                                 "text": "After thinking step by step, modify this image with \"<sent>\", describe modified image in one word: "},
+                            ],
+                        }
+                    ]
+            elif prompt_type == 'ke':
+                # Pretended prompt (summarize word)
+                img_prompt = [
                     # {"role": "system", "content": "You are a helpful assistant."},
                     {
                         "role": "user",
@@ -639,20 +809,56 @@ def main(
                                 "image": "image_path",
                             },
                             {"type": "text",
-                             "text": "After thinking step by step, modify this image with \"<sent>\", describe modified image in one word: "},
+                             "text": "The essence of image is often captured by its main objects and actions, while additional details provide context. " \
+                                     "With this in mind, describe this image in one word: "},
                         ],
                     }
                 ]
+                if shared_concept:
+                    # with shared concept
+                    text_img_prompt = [
+                        # {"role": "system", "content": "You are a helpful assistant."},
+                        {
+                            "role": "user",
+                            "content": [
+                                {
+                                    "type": "image",
+                                    "image": "image_path",
+                                },
+                                {"type": "text",
+                                 "text": "The essence of this image is often captured by its main objects and actions, while additional details provide context. " \
+                                         "With this in mind, modify this image with \"<sent>\", and the shared concept is \"<concept>\", describe modified image in one word: "},
+                            ],
+                        }
+                    ]
+                else:
+                    text_img_prompt = [
+                        # {"role": "system", "content": "You are a helpful assistant."},
+                        {
+                            "role": "user",
+                            "content": [
+                                {
+                                    "type": "image",
+                                    "image": "image_path",
+                                },
+                                {"type": "text",
+                                 "text": "The essence of this image is often captured by its main objects and actions, while additional details provide context. " \
+                                         "With this in mind, modify this image with \"<sent>\", describe modified image in one word: "},
+                            ],
+                        }
+                    ]
 
             relative_val_dataset = CIRRDataset('val', 'relative')
             classic_val_dataset = CIRRDataset('val', 'classic')
 
-            metrics = cirr_compute_val_metrics(model, transform, device, relative_val_dataset, classic_val_dataset, batch_size, img_prompt, text_img_prompt)
+            feature_path = f'{feature_root}/train_{train_prompt_type}_circo_index_data_{ckt_id}_eval_{prompt_type}.pt'
+            metrics = cirr_compute_val_metrics(model, transform, device, relative_val_dataset, classic_val_dataset,
+                                               batch_size, img_prompt, text_img_prompt, feature_path, shared_concept)
             print(metrics)
 
         # Validate on CIRCO dataset
         elif data == 'circo':
-            if prompt_type == 'original':
+            if prompt_type == 'org':
                 # Original prompt (summarize word)
                 img_prompt = [
                     # {"role": "system", "content": "You are a helpful assistant."},
@@ -667,7 +873,6 @@ def main(
                         ],
                     }
                 ]
-
                 if shared_concept:
                     # with shared concept
                     text_img_prompt = [
@@ -699,7 +904,6 @@ def main(
                             ],
                         }
                     ]
-
             elif prompt_type == 'cot':
                 # Pretended prompt (summarize word)
                 img_prompt = [
@@ -715,7 +919,6 @@ def main(
                         ],
                     }
                 ]
-
                 if shared_concept:
                     # with shared concept
                     text_img_prompt = [
@@ -747,17 +950,71 @@ def main(
                             ],
                         }
                     ]
+            elif prompt_type == 'ke':
+                # Pretended prompt (summarize word)
+                img_prompt = [
+                    # {"role": "system", "content": "You are a helpful assistant."},
+                    {
+                        "role": "user",
+                        "content": [
+                            {
+                                "type": "image",
+                                "image": "image_path",
+                            },
+                            {"type": "text",
+                             "text": "The essence of image is often captured by its main objects and actions, while additional details provide context. " \
+                                     "With this in mind, describe this image in one word: "},
+                        ],
+                    }
+                ]
+                if shared_concept:
+                    # with shared concept
+                    text_img_prompt = [
+                        # {"role": "system", "content": "You are a helpful assistant."},
+                        {
+                            "role": "user",
+                            "content": [
+                                {
+                                    "type": "image",
+                                    "image": "image_path",
+                                },
+                                {"type": "text",
+                                 "text": "The essence of this image is often captured by its main objects and actions, while additional details provide context. " \
+                                         "With this in mind, modify this image with \"<sent>\", and the shared concept is \"<concept>\", describe modified image in one word: "},
+                            ],
+                        }
+                    ]
+                else:
+                    text_img_prompt = [
+                        # {"role": "system", "content": "You are a helpful assistant."},
+                        {
+                            "role": "user",
+                            "content": [
+                                {
+                                    "type": "image",
+                                    "image": "image_path",
+                                },
+                                {"type": "text",
+                                 "text": "The essence of this image is often captured by its main objects and actions, while additional details provide context. " \
+                                         "With this in mind, modify this image with \"<sent>\", describe modified image in one word: "},
+                            ],
+                        }
+                    ]
 
             relative_val_dataset = CIRCODataset('val', 'relative')
             classic_val_dataset = CIRCODataset('val', 'classic')
 
+            feature_path = f'{feature_root}/train_{train_prompt_type}_circo_index_data_{ckt_id}_eval_{prompt_type}.pt'
             metrics = circo_compute_val_metrics(model, transform, device, relative_val_dataset, classic_val_dataset,
-                                               batch_size, img_prompt, text_img_prompt, shared_concept)
+                                                batch_size, img_prompt, text_img_prompt, feature_path, shared_concept)
             print(metrics)
 
         if accelerator.is_main_process:
             if lora_path is not None:
-                checkpoint_name = lora_path.replace('/', '_') + '.txt'
+                train_model_name = lora_path.split("/")[-2]
+                ckt_name = lora_path.split("/")[-1]
+                # checkpoint_name = lora_path.replace('/', '_') + '.txt'
+                checkpoint_name = f"{train_model_name}_{ckt_name}_eval_{prompt_type}.txt"
             elif name is not None:
                 checkpoint_name = name if name.endswith('.txt') else name + '.txt'
             else:
@@ -782,3 +1039,4 @@ if __name__ == '__main__':
     from fire import Fire
 
     Fire(main)
+
