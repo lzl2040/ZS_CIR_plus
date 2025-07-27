@@ -30,6 +30,7 @@ from accelerate import Accelerator
 accelerator = Accelerator()
 
 feature_root = "/mnt/input_zuo/ZS-CIR/plus_version/saves/phi3_index_features"
+# feature_root = "phi3_index_features"
 os.makedirs(feature_root, exist_ok=True)
 
 import os
@@ -563,9 +564,9 @@ def main(
         return img_prompt, text_img_prompt
 
     # datasets = ['circo']
-    datasets = ['fashioniq dress', 'fashioniq shirt', 'fashioniq toptee', 'cirr']
+    # datasets = ['fashioniq dress', 'fashioniq shirt', 'fashioniq toptee', 'cirr']
     # datasets = ['fashioniq dress', 'fashioniq shirt', 'fashioniq toptee']
-    # datasets = ['cirr']
+    datasets = ['cirr']
     if data:
         datasets = data.split(',')
 
@@ -582,19 +583,19 @@ def main(
                 if prompt_type == 'org':
                     # Original prompt with shared concept (summarize word)
                     img_prompt = f"[INST] <image> Describe this {fiq_data_name} in one word based on its style: [/INST]"
-                    text_img_prompt = f"[INST] <image> change the style of this {fiq_data_name} to <sent>\n " \
-                                      f"Describe this modified {fiq_data_name} in one word based on its style: [/INST]"
+                    text_img_prompt = f"[INST] <image> change the style of this {fiq_data_name} to <sent>,  " \
+                                      f"and the shared concept is \"<concept>\", and describe this modified {fiq_data_name} in one word based on its style: [/INST]"
                 elif prompt_type == 'cot':
                     # Pretended CoT prompt with shared concept (summarize word)
                     img_prompt = f"[INST] <image>\n After thinking step by step, describe this {fiq_data_name} in one word based on its style: [/INST]"
-                    text_img_prompt = f"[INST] <image>\n After thinking step by step, change the style of this {fiq_data_name} to <sent>\n" \
-                                      f" Describe this modified {fiq_data_name} in one word based on its style: [/INST]"
+                    text_img_prompt = f"[INST] <image>\n After thinking step by step, change the style of this {fiq_data_name} to <sent>, " \
+                                      f"and the shared concept is \"<concept>\", and describe this modified {fiq_data_name} in one word based on its style: [/INST]"
                 elif prompt_type == 'ke':
                     # Knowledge enhanced prompt with shared concept (summarize word)
                     img_prompt = f"[INST] <image>\n The essence of this {fiq_data_name} is often captured by its main objects and actions, while additional details provide context. " \
                                  f"With this in mind, describe this {fiq_data_name} in one word based on its style: [/INST]"
                     text_img_prompt = f"[INST] <image>\n The essence of this {fiq_data_name} is often captured by its main objects and actions, while additional details provide context. " \
-                                      f"With this in mind, change the style of this {fiq_data_name} to \"<sent>\", and describe this modified {fiq_data_name} in one word based on its style: [/INST]"
+                                      f"With this in mind, change the style of this {fiq_data_name} to \"<sent>\", and the shared concept is \"<concept>\", and describe this modified {fiq_data_name} in one word based on its style: [/INST]"
             else:
                 if prompt_type == 'org':
                     # Original prompt (summarize word)
@@ -628,17 +629,17 @@ def main(
                 if prompt_type == 'org':
                     # Original prompt with shared concept (summarize word)
                     img_prompt = "[INST] <image> Describe this image in one word: [/INST]"
-                    text_img_prompt = "[INST] <image>Modify this image with \"<sent>\", describe modified image in one word: [/INST]"
+                    text_img_prompt = "[INST] <image>Modify this image with \"<sent>\", and the shared concept is \"<concept>\", and describe modified image in one word: [/INST]"
                 elif prompt_type == 'cot':
                     # Pretended CoT prompt with shared concept (summarize word)
                     img_prompt = "[INST] <image>\n After thinking step by step, describe this image in one word: [/INST]"
-                    text_img_prompt = "[INST] <image>\n After thinking step by step, modify this image with \"<sent>\", describe the modified image in one word: [/INST]"
+                    text_img_prompt = "[INST] <image>\n After thinking step by step, modify this image with \"<sent>\", and the shared concept is \"<concept>\", and describe the modified image in one word: [/INST]"
                 elif prompt_type == 'ke':
                     # Knowledge enhanced prompt with shared concept (summarize word)
                     img_prompt = "[INST] <image>\n The essence of image is often captured by its main objects and actions, while additional details provide context. " \
                                  "With this in mind, describe this image in one word: [/INST]"
                     text_img_prompt = "[INST] <image>\n The essence of this image is often captured by its main objects and actions, while additional details provide context. " \
-                                      "With this in mind, modify this image with \"<sent>\", and describe the modified image in one word: [/INST]"
+                                      "With this in mind, modify this image with \"<sent>\", and the shared concept is \"<concept>\", and describe the modified image in one word: [/INST]"
             else:
                 if prompt_type == 'org':
                     # Original prompt (summarize word)

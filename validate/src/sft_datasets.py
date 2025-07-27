@@ -29,6 +29,7 @@ def collate_fn(batch):
     return collate_batch
 
 dataset_path = Path('/mnt/input_zuo/ZS-CIR')
+# dataset_path = Path('/home/v-zuoleili/Data')
 
 # FashionIQ Dataset
 class FashionIQDataset(Dataset):
@@ -269,7 +270,7 @@ class CIRRDataset(Dataset):
             elif self.mode == 'classic':
                 image_name = list(self.name_to_relpath.keys())[index]
                 image_path = dataset_path / 'CIRR' / self.name_to_relpath[image_name]
-                image_path = image_path.with_suffix('.jpg')
+                # image_path = image_path.with_suffix('.jpg')
                 image = PIL.Image.open(image_path)
                 if self.preprocess is not None:
                     image = self.preprocess(image)

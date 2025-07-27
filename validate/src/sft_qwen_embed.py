@@ -851,7 +851,7 @@ def main(
             relative_val_dataset = CIRRDataset('val', 'relative')
             classic_val_dataset = CIRRDataset('val', 'classic')
 
-            feature_path = f'{feature_root}/train_{train_prompt_type}_circo_index_data_{ckt_id}_eval_{prompt_type}.pt'
+            feature_path = f'{feature_root}/train_{train_prompt_type}_cirr_index_data_{ckt_id}_eval_{prompt_type}.pt'
             metrics = cirr_compute_val_metrics(model, transform, device, relative_val_dataset, classic_val_dataset,
                                                batch_size, img_prompt, text_img_prompt, feature_path, shared_concept)
             print(metrics)
@@ -1004,7 +1004,7 @@ def main(
             relative_val_dataset = CIRCODataset('val', 'relative')
             classic_val_dataset = CIRCODataset('val', 'classic')
 
-            feature_path = f'{feature_root}/train_{train_prompt_type}_circo_index_data_{ckt_id}_eval_{prompt_type}.pt'
+            feature_path = f'{feature_root}/train_{train_prompt_type}_circo_true_index_data_{ckt_id}_eval_{prompt_type}.pt'
             metrics = circo_compute_val_metrics(model, transform, device, relative_val_dataset, classic_val_dataset,
                                                 batch_size, img_prompt, text_img_prompt, feature_path, shared_concept)
             print(metrics)

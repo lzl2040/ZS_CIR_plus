@@ -11,7 +11,7 @@ CKPT_LIST=(
 
 # 其他参数
 BASE_PATH="/mnt/input_zuo/ZS-CIR/plus_version/saves/phi3-4bit-ke"
-# BASE_PATH="/home/v-zuoleili/Temp/ZS_CIR_plus/phi3-4bit-ke"
+# BASE_PATH="/home/v-zuoleili/Pretrain/phi3-4bit-ke"
 PROMPT_TYPES=("ke" "cot" "org")
 
 # 遍历 checkpoint
@@ -29,6 +29,7 @@ for CKPT_ID in "${CKPT_LIST[@]}"; do
       --base_model 'phi3_vision' \
       --prompt_type "$PROMPT" \
       --lora_path "$WEIGHT_ROOT" \
-      --file_path '/mnt/input_zuo/ZS-CIR/plus_version/results'
+      --file_path 'results'
+      # --file_path '/mnt/input_zuo/ZS-CIR/plus_version/results'
   done
 done
