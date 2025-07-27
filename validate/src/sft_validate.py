@@ -563,8 +563,8 @@ def main(
         return img_prompt, text_img_prompt
 
     # datasets = ['circo']
-    # datasets = ['fashioniq dress', 'fashioniq shirt', 'fashioniq toptee', 'cirr']
-    datasets = ['fashioniq dress', 'fashioniq shirt', 'fashioniq toptee']
+    datasets = ['fashioniq dress', 'fashioniq shirt', 'fashioniq toptee', 'cirr']
+    # datasets = ['fashioniq dress', 'fashioniq shirt', 'fashioniq toptee']
     # datasets = ['cirr']
     if data:
         datasets = data.split(',')
