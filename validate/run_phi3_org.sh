@@ -4,8 +4,8 @@
 CKPT_LIST=(
   checkpoint-350
   checkpoint-300
-  checkpoint-250
   checkpoint-400
+  checkpoint-250
   checkpoint-450
 )
 
@@ -17,7 +17,7 @@ PROMPT_TYPES=("ke" "cot" "org")
 # 遍历 checkpoint
 for CKPT_ID in "${CKPT_LIST[@]}"; do
   WEIGHT_ROOT="$BASE_PATH/$CKPT_ID"
-  echo "Testing checkpoint: $CKPT_ID"
+  echo "Testing checkpoint: $WEIGHT_ROOT"
 
   # 遍历 prompt_type
   for PROMPT in "${PROMPT_TYPES[@]}"; do
