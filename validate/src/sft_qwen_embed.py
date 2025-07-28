@@ -278,7 +278,7 @@ def generate_cirr_val_predictions(model, transform, device, relative_val_dataset
 
         reference_images = batch['reference_image']
         relative_captions = batch['relative_caption']
-        if shared_concepts:
+        if shared_concept:
             shared_concepts = batch['shared_concept']
 
         group_members = batch['group_members']
