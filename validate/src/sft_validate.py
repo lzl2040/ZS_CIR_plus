@@ -12,7 +12,7 @@ import cv2
 import json
 import shutil
 from statistics import mean, geometric_mean, harmonic_mean
-import os
+
 import numpy as np
 import torch.nn.functional as F
 from torch import nn
@@ -29,12 +29,12 @@ from sft_datasets import collate_fn, FashionIQDataset, CIRRDataset, CIRCODataset
 from accelerate import Accelerator
 accelerator = Accelerator()
 
+import os
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
+
 feature_root = "/mnt/input_zuo/ZS-CIR/plus_version/saves/phi3_index_features"
 # feature_root = "phi3_index_features"
 os.makedirs(feature_root, exist_ok=True)
-
-import os
-os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 if torch.cuda.is_available():
     device = torch.device("cuda")
@@ -126,7 +126,6 @@ def init_model_and_transform(base_model, lora_path, bf16):
 
 # 将不同数据集 data 的评估指标 metrics 输出到文件中
 def log_to_file(data, metrics, checkpoint_name, file_path, fiq_data_type=None):
-    os.makedirs(file_path, exist_ok=True)
     if data == 'fashioniq':
         assert len(metrics) == 2
         r_at_10, r_at_50 = metrics
@@ -277,7 +276,8 @@ def generate_cirr_val_predictions(model, transform, device, relative_val_dataset
 
         reference_images = batch['reference_image']
         relative_captions = batch['relative_caption']
-        shared_concepts = batch['shared_concept']
+        if shared_concept:
+            shared_concepts = batch['shared_concept']
 
         group_members = batch['group_members']
         group_members = np.array(group_members).tolist()
@@ -521,6 +521,7 @@ def main(
 ):
     global DEBUG, MODEL_TYPE
     DEBUG = debug
+
     if lora_path != None:
         ckt_id = lora_path.split("/")[-1].split("-")[1]
         train_prompt_type = lora_path.split("/")[-2].split("-")[-1]
@@ -563,10 +564,9 @@ def main(
 
         return img_prompt, text_img_prompt
 
-    # datasets = ['circo']
-    # datasets = ['fashioniq dress', 'fashioniq shirt', 'fashioniq toptee', 'cirr']
-    datasets = ['fashioniq dress', 'fashioniq shirt', 'fashioniq toptee']
-    # datasets = ['cirr']
+    # datasets = ['circo'] # 时间长，后验证
+    # datasets = ['fashioniq dress', 'fashioniq shirt', 'fashioniq toptee', 'cirr'] # 先验证
+    datasets = ['cirr']
     if data:
         datasets = data.split(',')
 
@@ -605,14 +605,14 @@ def main(
                 elif prompt_type == 'cot':
                     # Pretended CoT prompt (summarize word)
                     img_prompt = f"[INST] <image>\n After thinking step by step, describe this {fiq_data_name} in one word based on its style: [/INST]"
-                    text_img_prompt = f"[INST] <image>\n After thinking step by step, change the style of this {fiq_data_name} to <sent>\n" \
-                                      f" Describe this modified {fiq_data_name} in one word based on its style: [/INST]"
+                    text_img_prompt = f"[INST] <image>\n After thinking step by step, change the style of this {fiq_data_name} to <sent>,\n" \
+                                      f"Describe this modified {fiq_data_name} in one word based on its style: [/INST]"
                 elif prompt_type == 'ke':
                     # Knowledge enhanced prompt (summarize word)
                     img_prompt = f"[INST] <image>\n The essence of this {fiq_data_name} is often captured by its main objects and actions, while additional details provide context. " \
                                  f"With this in mind, describe this {fiq_data_name} in one word based on its style: [/INST]"
                     text_img_prompt = f"[INST] <image>\n The essence of this {fiq_data_name} is often captured by its main objects and actions, while additional details provide context. " \
-                                      f"With this in mind, change the style of this {fiq_data_name} to \"<sent>\", and describe this modified {fiq_data_name} in one word based on its style: [/INST]"
+                                      f"With this in mind, change the style of this {fiq_data_name} to \"<sent>\", describe this modified {fiq_data_name} in one word based on its style: [/INST]"
 
             img_prompt, text_img_prompt = process_prompt(img_prompt, text_img_prompt)
 
@@ -671,11 +671,11 @@ def main(
                 if prompt_type == 'org':
                     # Original prompt (summarize word) with shared concepts
                     img_prompt = "[INST] <image>\n Describe this image in one word: [/INST]"
-                    text_img_prompt = "[INST] <image>Modify this image with \"<sent>\", and the shared concept is \"<concept>\", describe modified image in one word: [/INST]"
+                    text_img_prompt = "[INST] <image>Modify this image with \"<sent>\", and the shared concept is \"<concept>\", and describe modified image in one word: [/INST]"
                 elif prompt_type == 'cot':
                     # Pretended CoT prompt (summarize word) with shared concepts
                     img_prompt = "[INST] <image>\n After thinking step by step, describe this image in one word: [/INST]"
-                    text_img_prompt = "[INST] <image>\n After thinking step by step, modify this image with \"<sent>\", and the shared concept is \"<concept>\", describe modified image in one word: [/INST]"
+                    text_img_prompt = "[INST] <image>\n After thinking step by step, modify this image with \"<sent>\", and the shared concept is \"<concept>\", and describe modified image in one word: [/INST]"
                 elif prompt_type == 'ke':
                     # Knowledge enhanced prompt (summarize word)
                     img_prompt = "[INST] <image>\n The essence of image is often captured by its main objects and actions, while additional details provide context. " \
@@ -703,18 +703,15 @@ def main(
             relative_val_dataset = CIRCODataset('val', 'relative')
             classic_val_dataset = CIRCODataset('val', 'classic')
 
+            # 前训练提示，后测试提示
             feature_path = f'{feature_root}/train_{train_prompt_type}_circo_index_data_{ckt_id}_eval_{prompt_type}.pt'
-            # feature_path = f'{feature_path}/circo_index_data_org.pt'
             metrics = circo_compute_val_metrics(model, transform, device, relative_val_dataset, classic_val_dataset,
                                                batch_size, img_prompt, text_img_prompt, phi3, feature_path, shared_concept)
             print(metrics)
 
         if accelerator.is_main_process:
             if lora_path is not None:
-                train_model_name = lora_path.split("/")[-2]
-                ckt_name = lora_path.split("/")[-1]
-                # checkpoint_name = lora_path.replace('/', '_') + '.txt'
-                checkpoint_name = f"{train_model_name}_{ckt_name}_eval_{prompt_type}.txt"
+                checkpoint_name = lora_path.replace('/', '_') + '.txt'
             elif name is not None:
                 checkpoint_name = name if name.endswith('.txt') else name + '.txt'
             else:

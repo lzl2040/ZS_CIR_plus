@@ -2,10 +2,9 @@
 
 # 你的 checkpoint ID 列表
 CKPT_LIST=(
-  checkpoint-50
-  checkpoint-20
   checkpoint-40
-  checkpoint-30
+  checkpoint-50
+  checkpoint-60
 )
 
 # 其他参数

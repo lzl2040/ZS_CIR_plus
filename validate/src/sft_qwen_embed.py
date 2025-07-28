@@ -278,7 +278,8 @@ def generate_cirr_val_predictions(model, transform, device, relative_val_dataset
 
         reference_images = batch['reference_image']
         relative_captions = batch['relative_caption']
-        shared_concepts = batch['shared_concept']
+        if shared_concepts:
+            shared_concepts = batch['shared_concept']
 
         group_members = batch['group_members']
         group_members = np.array(group_members).tolist()
@@ -541,8 +542,8 @@ def main(
 
     # datasets = ['circo']
     # datasets = ['fashioniq dress', 'fashioniq shirt', 'fashioniq toptee', 'circo']
-    datasets = ['fashioniq dress', 'fashioniq shirt', 'fashioniq toptee', 'cirr']
-    # datasets = ['cirr']
+    # datasets = ['fashioniq dress', 'fashioniq shirt', 'fashioniq toptee', 'cirr']
+    datasets = ['cirr']
     if data:
         datasets = data.split(',')
 
