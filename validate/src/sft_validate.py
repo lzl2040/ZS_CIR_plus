@@ -145,6 +145,7 @@ def log_to_file(data, metrics, checkpoint_name, file_path, fiq_data_type=None):
 
     if checkpoint_name is not None:
         save_path = os.path.join(file_path, checkpoint_name)
+        print(f"save to {save_path}")
         with open(save_path, 'a') as f:
             print(output, file=f)
 
@@ -565,8 +566,9 @@ def main(
         return img_prompt, text_img_prompt
 
     # datasets = ['circo'] # 时间长，后验证
-    # datasets = ['fashioniq dress', 'fashioniq shirt', 'fashioniq toptee', 'cirr'] # 先验证
-    datasets = ['cirr']
+    datasets = ['fashioniq dress', 'fashioniq shirt', 'fashioniq toptee'] # 先验证
+    # datasets = ['cirr']
+    print(f"Test datasets:{datasets}")
     if data:
         datasets = data.split(',')
 
