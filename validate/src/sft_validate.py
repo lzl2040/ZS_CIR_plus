@@ -713,7 +713,10 @@ def main(
 
         if accelerator.is_main_process:
             if lora_path is not None:
-                checkpoint_name = lora_path.replace('/', '_') + '.txt'
+                train_model_name = lora_path.split("/")[-2]
+                ckt_name = lora_path.split("/")[-1]
+                # checkpoint_name = lora_path.replace('/', '_') + '.txt'
+                checkpoint_name = f"{train_model_name}_{ckt_name}_eval_{prompt_type}.txt"
             elif name is not None:
                 checkpoint_name = name if name.endswith('.txt') else name + '.txt'
             else:
