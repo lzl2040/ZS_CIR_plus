@@ -3,8 +3,8 @@
 # 你的 checkpoint ID 列表
 CKPT_LIST=(
   checkpoint-350
-  checkpoint-300
   checkpoint-400
+  checkpoint-300
   checkpoint-250
   checkpoint-450
 )

@@ -565,8 +565,8 @@ def main(
 
     # datasets = ['circo']
     # datasets = ['fashioniq dress', 'fashioniq shirt', 'fashioniq toptee', 'cirr']
-    # datasets = ['fashioniq dress', 'fashioniq shirt', 'fashioniq toptee']
-    datasets = ['cirr']
+    datasets = ['fashioniq dress', 'fashioniq shirt', 'fashioniq toptee']
+    # datasets = ['cirr']
     if data:
         datasets = data.split(',')
 
