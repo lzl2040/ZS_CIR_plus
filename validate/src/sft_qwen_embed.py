@@ -369,6 +369,55 @@ def cirr_compute_val_metrics(model, transform, device, relative_val_dataset, cla
 
 
 @torch.no_grad()
+def cirr_compute_val_metrics(model, transform, device, relative_val_dataset, classic_val_dataset,
+                             batch_size, img_prompt, text_img_prompt, feature_path, shared_concept):
+    # Generate the predicted_features, target_names_list, index_features, index_names_list
+    predicted_features, reference_names, target_names, group_members, index_features, index_names = generate_cirr_val_predictions(
+        model, transform, device, relative_val_dataset, classic_val_dataset,
+        batch_size, img_prompt, text_img_prompt, feature_path, shared_concept)
+
+    # Move the features to the device
+    index_features = index_features.to(device)
+    predicted_features = predicted_features.to(device)
+
+    # Compute the distance and sort the results
+    distances = 1 - predicted_features @ index_features.T
+    sorted_indices = torch.argsort(distances, dim=-1).cpu()
+    sorted_index_names = np.array(index_names)[sorted_indices]
+
+    # Delete the reference image from the results
+    reference_mask = torch.tensor(
+        sorted_index_names != np.repeat(np.array(reference_names), len(index_names)).reshape(len(target_names), -1))
+    sorted_index_names = sorted_index_names[reference_mask].reshape(sorted_index_names.shape[0],
+                                                                    sorted_index_names.shape[1] - 1)
+
+    # Compute the ground-truth labels wrt the predictions
+    labels = torch.tensor(
+        sorted_index_names == np.repeat(np.array(target_names), len(index_names) - 1).reshape(len(target_names), -1))
+
+    # Compute the subset predictions and ground-truth labels
+    group_members = np.array(group_members)
+    group_mask = (sorted_index_names[..., None] == group_members[:, None, :]).sum(-1).astype(bool)
+    group_labels = labels[group_mask].reshape(labels.shape[0], -1)
+
+    assert torch.equal(torch.sum(labels, dim=-1).int(), torch.ones(len(target_names)).int())
+    assert torch.equal(torch.sum(group_labels, dim=-1).int(), torch.ones(len(target_names)).int())
+
+    # Compute the metrics
+    r_at_1 = (torch.sum(labels[:, :1]) / len(labels)).item() * 100
+    r_at_5 = (torch.sum(labels[:, :5]) / len(labels)).item() * 100
+    r_at_10 = (torch.sum(labels[:, :10]) / len(labels)).item() * 100
+    r_at_50 = (torch.sum(labels[:, :50]) / len(labels)).item() * 100
+    rs_at_1 = (torch.sum(group_labels[:, :1]) / len(group_labels)).item() * 100
+    rs_at_2 = (torch.sum(group_labels[:, :2]) / len(group_labels)).item() * 100
+    rs_at_3 = (torch.sum(group_labels[:, :3]) / len(group_labels)).item() * 100
+
+    metrics = [r_at_1, r_at_5, r_at_10, r_at_50, rs_at_1, rs_at_2, rs_at_3]
+
+    return metrics
+
+
+@torch.no_grad()
 def generate_circo_val_predictions(model, transform, device, relative_val_dataset, classic_val_dataset,
                                    batch_size, img_prompt, text_img_prompt, feature_path, shared_concept):
     print(img_prompt)
@@ -440,11 +489,11 @@ def generate_circo_val_predictions(model, transform, device, relative_val_datase
 
 @torch.no_grad()
 def circo_compute_val_metrics(model, transform, device, relative_val_dataset, classic_val_dataset,
-                              batch_size, img_prompt, text_img_prompt, shared_concept):
+                              batch_size, img_prompt, text_img_prompt, feature_path, shared_concept):
     # Generate the predicted_features, target_names_list, index_features, index_names_list
     predicted_features, target_names, gts_img_ids, index_features, index_names = generate_circo_val_predictions(
         model, transform, device, relative_val_dataset, classic_val_dataset,
-        batch_size, img_prompt, text_img_prompt, shared_concept)
+        batch_size, img_prompt, text_img_prompt, feature_path, shared_concept)
     # Move the features to the device
     index_features = index_features.to(device)
     predicted_features = predicted_features.to(device)
@@ -663,8 +712,10 @@ def main(
                                 "type": "image",
                                 "image": "image_path",
                             },
+                            # {"type": "text", "text": "The essence of image is often captured by its main objects and actions, while additional details provide context. " \
+                            #      f"With this in mind, describe this {fiq_data_name} in one word based on its style: "},
                             {"type": "text",
-                             "text": "The essence of image is often captured by its main objects and actions, while additional details provide context. " \
+                             "text": f"The essence of this {fiq_data_name} is often captured by its main design elements and core features, while model poses and extra items provide additional context." \
                                      f"With this in mind, describe this {fiq_data_name} in one word based on its style: "},
                         ],
                     }
@@ -679,8 +730,11 @@ def main(
                                     "type": "image",
                                     "image": "image_path",
                                 },
+                                # {"type": "text",
+                                #  "text": "The essence of image is often captured by its main objects and actions, while additional details provide context. " \
+                                #  f"With this in mind, change the style of this {fiq_data_name} to \"<sent>\", and the shared concept is \"<concept>\", and describe this modified {fiq_data_name} in one word based on its style:"},
                                 {"type": "text",
-                                 "text": "The essence of image is often captured by its main objects and actions, while additional details provide context. " \
+                                 "text": f"The essence of this {fiq_data_name} is often captured by its main design elements and core features, while model poses and extra items provide additional context." \
                                          f"With this in mind, change the style of this {fiq_data_name} to \"<sent>\", and the shared concept is \"<concept>\", and describe this modified {fiq_data_name} in one word based on its style:"},
                             ],
                         }
@@ -695,8 +749,11 @@ def main(
                                     "type": "image",
                                     "image": "image_path",
                                 },
+                                # {"type": "text",
+                                #  "text": "The essence of image is often captured by its main objects and actions, while additional details provide context. " \
+                                #          f"With this in mind, change the style of this {fiq_data_name} to \"<sent>\", and describe this modified {fiq_data_name} in one word based on its style:"},
                                 {"type": "text",
-                                 "text": "The essence of image is often captured by its main objects and actions, while additional details provide context. " \
+                                 "text": f"The essence of this {fiq_data_name} is often captured by its main design elements and core features, while model poses and extra items provide additional context." \
                                          f"With this in mind, change the style of this {fiq_data_name} to \"<sent>\", and describe this modified {fiq_data_name} in one word based on its style:"},
                             ],
                         }
