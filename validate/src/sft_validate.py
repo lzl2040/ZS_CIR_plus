@@ -566,8 +566,8 @@ def main(
         return img_prompt, text_img_prompt
 
     # datasets = ['circo'] # 时间长，后验证
-    datasets = ['fashioniq dress', 'fashioniq shirt', 'fashioniq toptee'] # 先验证
-    # datasets = ['cirr']
+    # datasets = ['fashioniq dress', 'fashioniq shirt', 'fashioniq toptee'] # 先验证
+    datasets = ['cirr']
     print(f"Test datasets:{datasets}")
     if data:
         datasets = data.split(',')
@@ -594,9 +594,13 @@ def main(
                                       f"and the shared concept is \"<concept>\", and describe this modified {fiq_data_name} in one word based on its style: [/INST]"
                 elif prompt_type == 'ke':
                     # Knowledge enhanced prompt with shared concept (summarize word)
-                    img_prompt = f"[INST] <image>\n The essence of this {fiq_data_name} is often captured by its main objects and actions, while additional details provide context. " \
+                    # img_prompt = f"[INST] <image>\n The essence of this {fiq_data_name} is often captured by its main objects and actions, while additional details provide context. " \
+                    #              f"With this in mind, describe this {fiq_data_name} in one word based on its style: [/INST]"
+                    # text_img_prompt = f"[INST] <image>\n The essence of this {fiq_data_name} is often captured by its main objects and actions, while additional details provide context. " \
+                    #                   f"With this in mind, change the style of this {fiq_data_name} to \"<sent>\", and the shared concept is \"<concept>\", and describe this modified {fiq_data_name} in one word based on its style: [/INST]"
+                    img_prompt = f"[INST] <image>\n The essence of this {fiq_data_name} is often captured by its main design elements and core features, while model poses and extra items provide additional context. " \
                                  f"With this in mind, describe this {fiq_data_name} in one word based on its style: [/INST]"
-                    text_img_prompt = f"[INST] <image>\n The essence of this {fiq_data_name} is often captured by its main objects and actions, while additional details provide context. " \
+                    text_img_prompt = f"[INST] <image>\n The essence of this {fiq_data_name} is often captured by its main design elements and core features, while model poses and extra items provide additional context. " \
                                       f"With this in mind, change the style of this {fiq_data_name} to \"<sent>\", and the shared concept is \"<concept>\", and describe this modified {fiq_data_name} in one word based on its style: [/INST]"
             else:
                 if prompt_type == 'org':
@@ -611,9 +615,13 @@ def main(
                                       f"Describe this modified {fiq_data_name} in one word based on its style: [/INST]"
                 elif prompt_type == 'ke':
                     # Knowledge enhanced prompt (summarize word)
-                    img_prompt = f"[INST] <image>\n The essence of this {fiq_data_name} is often captured by its main objects and actions, while additional details provide context. " \
+                    # img_prompt = f"[INST] <image>\n The essence of this {fiq_data_name} is often captured by its main objects and actions, while additional details provide context. " \
+                    #              f"With this in mind, describe this {fiq_data_name} in one word based on its style: [/INST]"
+                    # text_img_prompt = f"[INST] <image>\n The essence of this {fiq_data_name} is often captured by its main objects and actions, while additional details provide context. " \
+                    #                   f"With this in mind, change the style of this {fiq_data_name} to \"<sent>\", describe this modified {fiq_data_name} in one word based on its style: [/INST]"
+                    img_prompt = f"[INST] <image>\n The essence of this {fiq_data_name} is often captured by its main design elements and core features, while model poses and extra items provide additional context. " \
                                  f"With this in mind, describe this {fiq_data_name} in one word based on its style: [/INST]"
-                    text_img_prompt = f"[INST] <image>\n The essence of this {fiq_data_name} is often captured by its main objects and actions, while additional details provide context. " \
+                    text_img_prompt = f"[INST] <image>\n The essence of this {fiq_data_name} is often captured by its main design elements and core features, while model poses and extra items provide additional context. " \
                                       f"With this in mind, change the style of this {fiq_data_name} to \"<sent>\", describe this modified {fiq_data_name} in one word based on its style: [/INST]"
 
             img_prompt, text_img_prompt = process_prompt(img_prompt, text_img_prompt)
