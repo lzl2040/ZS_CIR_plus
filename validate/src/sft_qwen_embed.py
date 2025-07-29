@@ -541,10 +541,10 @@ def main(
     model, transform = init_model_and_transform(base_model, lora_path, bf16)
     model.to(device)
 
-    # datasets = ['circo']
+    datasets = ['circo']
     # datasets = ['fashioniq dress', 'fashioniq shirt', 'fashioniq toptee', 'circo']
     # datasets = ['fashioniq dress', 'fashioniq shirt', 'fashioniq toptee', 'cirr']
-    datasets = ['cirr']
+    # datasets = ['cirr']
     print(f"Test datasets:{datasets}")
     if data:
         datasets = data.split(',')
