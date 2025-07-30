@@ -565,9 +565,9 @@ def main(
 
         return img_prompt, text_img_prompt
 
-    # datasets = ['circo'] # 时间长，后验证
+    datasets = ['circo'] # 时间长，后验证
     # datasets = ['fashioniq dress', 'fashioniq shirt', 'fashioniq toptee'] # 先验证
-    datasets = ['cirr']
+    # datasets = ['cirr']
     print(f"Test datasets:{datasets}")
     if data:
         datasets = data.split(',')

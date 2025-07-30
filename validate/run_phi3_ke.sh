@@ -5,8 +5,8 @@ CKPT_LIST=(
   checkpoint-350
   checkpoint-400
   checkpoint-300
-  checkpoint-250
-  checkpoint-450
+  # checkpoint-250
+  # checkpoint-450
 )
 
 # 其他参数
