@@ -21,8 +21,8 @@ for BASE_PATH in "${BASE_PATH_LIST[@]}"; do
 
     # 遍历 checkpoint
     for CKPT_ID in "${CKPT_LIST[@]}"; do
-    WEIGHT_ROOT="$BASE_PATH/$CKPT_ID"
-    echo "Testing checkpoint: $WEIGHT_ROOT"
+        WEIGHT_ROOT="$BASE_PATH/$CKPT_ID"
+        echo "Testing checkpoint: $WEIGHT_ROOT"
 
         # 遍历 prompt_type
         for PROMPT in "${PROMPT_TYPES[@]}"; do
