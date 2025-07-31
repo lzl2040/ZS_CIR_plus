@@ -28,10 +28,9 @@ for BASE_PATH in "${BASE_PATH_LIST[@]}"; do
         for PROMPT in "${PROMPT_TYPES[@]}"; do
             echo "Testing: BASE_PATH=$BASE_PATH | CKPT_ID=$CKPT_ID | PROMPT=$PROMPT"
 
-            CUDA_VISIBLE_DEVICES=0 python src/sft_validate.py \
-            --phi3 True \
-            --name 'Phi-3-vision-128k-instruct' \
-            --base_model 'phi3_vision' \
+            CUDA_VISIBLE_DEVICES=0 python src/sft_qwen_embed.py \
+            --name 'qwen2_5_vl' \
+            --base_model 'qwen2_5_vl' \
             --prompt_type "$PROMPT" \
             --lora_path "$WEIGHT_ROOT" \
             --file_path '/mnt/input_zuo/ZS-CIR/plus_version/results'
