@@ -4,7 +4,7 @@
 CKPT_LIST=(
   checkpoint-350
   checkpoint-400
-  checkpoint-300
+  # checkpoint-300
   # checkpoint-250
   # checkpoint-450
 )
@@ -29,6 +29,7 @@ for CKPT_ID in "${CKPT_LIST[@]}"; do
       --base_model 'phi3_vision' \
       --prompt_type "$PROMPT" \
       --lora_path "$WEIGHT_ROOT" \
-      --file_path '/mnt/input_zuo/ZS-CIR/plus_version/results'
+      --file_path '/mnt/input_zuo/ZS-CIR/plus_version/results_share' \
+      --shared_concept
   done
 done

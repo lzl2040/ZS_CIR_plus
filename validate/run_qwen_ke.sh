@@ -26,6 +26,7 @@ for CKPT_ID in "${CKPT_LIST[@]}"; do
       --base_model 'qwen2_5_vl' \
       --prompt_type "$PROMPT" \
       --lora_path "$WEIGHT_ROOT" \
-      --file_path '/mnt/input_zuo/ZS-CIR/plus_version/results'
+      --file_path '/mnt/input_zuo/ZS-CIR/plus_version/results_share' \
+      --shared_concept
   done
 done
