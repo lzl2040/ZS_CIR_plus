@@ -126,6 +126,7 @@ def init_model_and_transform(base_model, lora_path, bf16):
 
 # 将不同数据集 data 的评估指标 metrics 输出到文件中
 def log_to_file(data, metrics, checkpoint_name, file_path, fiq_data_type=None):
+    os.makedirs(file_path, exist_ok=True)
     if data == 'fashioniq':
         assert len(metrics) == 2
         r_at_10, r_at_50 = metrics
