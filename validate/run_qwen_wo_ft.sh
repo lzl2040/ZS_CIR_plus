@@ -23,7 +23,6 @@ for CKPT_ID in "${CKPT_LIST[@]}"; do
       --name 'qwen2_5_vl' \
       --base_model 'qwen2_5_vl' \
       --prompt_type "$PROMPT" \
-      --file_path '/mnt/input_zuo/ZS-CIR/plus_version/results_wo_ft' \
-      --shared_concept
+      --file_path '/mnt/input_zuo/ZS-CIR/plus_version/results_wo_ft'
   done
 done
