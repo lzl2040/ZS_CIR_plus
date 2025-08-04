@@ -1,5 +1,5 @@
 #!/bin/bash
-
+export OPENSSL_FIPS=0
 # 你的 checkpoint ID 列表
 CKPT_LIST=(
   checkpoint-40
