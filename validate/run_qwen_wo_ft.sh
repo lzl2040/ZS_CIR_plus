@@ -1,5 +1,5 @@
 #!/bin/bash
-export OPENSSL_FIPS=0
+
 # 你的 checkpoint ID 列表
 CKPT_LIST=(
   checkpoint-40
@@ -23,6 +23,7 @@ for CKPT_ID in "${CKPT_LIST[@]}"; do
       --name 'qwen2_5_vl' \
       --base_model 'qwen2_5_vl' \
       --prompt_type "$PROMPT" \
-      --file_path '/mnt/input_zuo/ZS-CIR/plus_version/results_wo_ft'
+      --file_path '/mnt/input_zuo/ZS-CIR/plus_version/results_wo_ft' \
+      --shared_concept
   done
 done

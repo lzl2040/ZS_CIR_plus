@@ -568,6 +568,7 @@ def main(
 ):
     global DEBUG, MODEL_TYPE
     DEBUG = debug
+    shared_concept = False
 
     if lora_path != None:
         ckt_id = lora_path.split("/")[-1].split("-")[1]
